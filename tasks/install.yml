@@ -1,0 +1,389 @@
+---
+- name: add the appian user
+  user:
+    name: "{{ appian_user }}"
+    group: root
+  become: yes
+
+- name: Set the soft nofile limit for appian user
+  pam_limits:
+    domain: "{{ appian_user }}"
+    limit_type: soft
+    limit_item: nofile
+    value: "{{ appian_user_nofile_limit | string }}"
+  become: yes
+
+- name: Set the hard nofile limit for appian user
+  pam_limits:
+    domain: "{{ appian_user }}"
+    limit_type: hard
+    limit_item: nofile
+    value: "{{ appian_user_nofile_limit | string }}"
+  become: yes
+
+- name: add JAVA_HOME to the appian user's bash profile
+  lineinfile:
+    line: "export JAVA_HOME={{ appian_java_home }}"
+    dest: "{{ appian_user_home }}/.bashrc"
+  become: true
+
+- name: put appian java on path
+  lineinfile:
+    line: "export PATH={{ appian_java_home }}/bin:$PATH"
+    dest: "{{ appian_user_home }}/.bashrc"
+  become: true
+
+- name: create appian base dir
+  file:
+    path: "{{  appian_installation_dir }}"
+    state: directory
+    owner: "{{ appian_user }}"
+    group: root
+    mode: 0755
+  become: yes
+
+- name: Install pexpect python package
+  pip:
+    name: pexpect
+
+- name: check for the appian bin
+  stat:
+    path: "{{ appian_user_home }}/{{ appian_bin_source }}"
+  register: appian_bin_exists
+
+- name: move the appian bin
+  copy:
+    src: "{{ appian_bin_source }}"
+    dest: "{{ appian_user_home }}/{{ appian_bin_source }}"
+    owner: "{{ appian_user }}"
+    mode: 0744
+  register: move_the_appian_bin
+  become: yes
+  when: not appian_bin_exists.stat.exists
+
+- name: check for an existing appian installation
+  stat:
+    path: "{{ appian_home }}"
+  register: appian_home_check
+  become: yes
+
+- name: set fact for existing appian installation check
+  set_fact:
+    appian_home_check: "{{ appian_home_check }}"
+
+- name: wait for user to perform installation
+  pause:
+    prompt: "
+      ********** HOST: {{ item }} **********
+      This machine ({{ item }}), is ready for the appian installer to be run.
+      However, this ansible role will not run the installer.
+      To install Appian, you must run the installer and read and respond to all prompts.
+      Any acknowledgments you make during installation are yours alone.
+      The installer is located on the machine at {{ move_the_appian_bin.dest }}
+      The post-installation configuration piece of this role expects appian to be installed at {{ appian_home }}.
+      The Appian installer is typically run as the user {{ appian_user }}.
+      If you wish to cotinue, after installating Appian on {{ item }}, press Enter.
+      If you wish to exit, type A"
+  with_items: "{{ (groups.appian_engines_instances + groups.appian_internal_messaging_instances + groups.appian_data_server_instances + groups.appian_search_server_instances + groups.appian_app_server_instances) | unique }}"
+  when: not hostvars[item].appian_home_check.stat.exists
+
+- name: recheck for an existing appian installation
+  stat:
+    path: "{{ appian_home }}"
+  register: appian_home_recheck
+  become: yes
+
+- name: set fact for existing appian installation recheck
+  set_fact:
+    appian_home_recheck: "{{ appian_home_recheck }}"
+
+- name: exit if appian is not installed
+  fail:
+    msg: "
+      ********** HOST: {{ item }} **********
+      Exiting!
+      Appian installation was not successfully performed on {{ item }}.
+      Post-installation configuration cannot continue without Appian being installed at {{ appian_home }}.
+      You may safely rerun this role; if you do, you will be re-prompted to manually install appian where it's missing."
+  run_once: true
+  with_items: "{{ (groups.appian_engines_instances + groups.appian_internal_messaging_instances + groups.appian_data_server_instances + groups.appian_search_server_instances + groups.appian_app_server_instances) | unique }}"
+  when: (not hostvars[item].appian_home_check.stat.exists) and (not hostvars[item].appian_home_recheck.stat.exists)
+
+- name: copy wait-for-tomcat.sh to host
+  copy:
+    src: wait-for-tomcat.sh
+    dest: "{{ appian_home }}/tomcat/apache-tomcat/bin/wait-for-tomcat.sh"
+    owner: "appian"
+    group: "root"
+    mode: 0764
+  become: yes
+  when: inventory_hostname in groups.appian_app_server_instances
+
+- include_tasks: configure_shared_folders.yml
+
+- name: check for an existing configuration repository
+  stat:
+    path: "{{ appian_repo_home }}"
+  register: repo_home_check
+  become: yes
+
+- name: create the configuration repository
+  expect:
+    command: "{{ appian_home }}/_admin/_scripts/configure/configure.sh"
+    responses:
+      \>:
+        - "1"
+        - "{{ appian_repo_home }}"
+        - Q
+  become: yes
+  become_user: "{{ appian_user }}"
+  become_flags: "--login"
+  when: not repo_home_check.stat.exists
+
+- name: check for an initial backup of appian
+  stat:
+    path: "{{ appian_backup_home }}"
+  register: backup_home_check
+  become: yes
+
+- name: create the initial backup of appian
+  expect:
+    command: "{{ appian_home }}/_admin/_scripts/configure/configure.sh"
+    responses:
+      \>:
+        - "2"
+        - "{{ appian_backup_home }}"
+        - Q
+    timeout: 300
+  become: yes
+  become_user: "{{ appian_user }}"
+  become_flags: "--login"
+  when: not backup_home_check.stat.exists
+
+- name: check if the env has already be registered
+  stat:
+    path: "{{ appian_repo_home }}/conf/tomcatResources.xml.dev"
+  register: env_check
+  become: yes
+
+- name: register the environment with appian
+  expect:
+    command: "{{ appian_home }}/_admin/_scripts/configure/configure.sh"
+    responses:
+      \>:
+        - "3"
+        - "{{ appian_env_name }}"
+        - Q
+  become: yes
+  become_user: "{{ appian_user }}"
+  become_flags: "--login"
+  when: not env_check.stat.exists
+
+- name: check for an existing k3.lic
+  stat:
+    path: "{{ appian_repo_home }}/server/_bin/k/linux64/k3.lic"
+  register: k3_exists
+
+- name: copy k3.lic to host
+  copy:
+    src: "{{ appian_k3_license }}"
+    dest: "{{ appian_repo_home }}/server/_bin/k/linux64/k3.lic"
+    owner: "{{ appian_user }}"
+    group: root
+    mode: 0644
+  become: yes
+  when: not k3_exists.stat.exists
+
+- name: check for an existing k4.lic
+  stat:
+    path: "{{ appian_repo_home }}/data-server/engine/bin/q/l64/k4.lic"
+  register: k4_exists
+
+- name: copy k4.lic to host
+  copy:
+    src: "{{ appian_k4_license }}"
+    dest: "{{ appian_repo_home }}/data-server/engine/bin/q/l64/k4.lic"
+    owner: "{{ appian_user }}"
+    group: root
+    mode: 0644
+  become: yes
+  when: not k4_exists.stat.exists
+
+- name: install mailx
+  yum:
+    name: mailx
+    state: present
+  become: yes
+
+# Starting tomcat requires rotatelogs to be installed.; this installs it and gets it on the path.
+- name: install rotatelogs via httpd
+  yum:
+    name: httpd
+    state: present
+  become: yes
+
+- name: write custom.properties.env to the configuration repository
+  template:
+    src: templates/conf/custom.properties.j2
+    dest: "{{ appian_repo_home }}/conf/custom.properties.{{ appian_env_name }}"
+    owner: "{{ appian_user }}"
+    mode: 0644
+  become: yes
+  become_user: "{{ appian_user }}"
+
+- name: generate a password for the service manager # noqa 301
+  command: "sh {{ appian_home }}/services/bin/password.sh -p {{ appian_system_manager_password }}"
+  become: yes
+  become_user: "{{ appian_user }}"
+  become_flags: "--login"
+
+- name: create the tomcat driver directory
+  file:
+    path: "{{ appian_repo_home }}/tomcat/apache-tomcat/lib"
+    state: directory
+    owner: "{{ appian_user }}"
+    mode: 0755
+  become: yes
+  become_user: "{{ appian_user }}"
+
+- name: check for rdbms driver
+  stat:
+    path: "{{ appian_repo_home }}/tomcat/apache-tomcat/lib/{{ appian_rdbms_drivers[appian_db_engine] }}"
+  register: rdbms_driver_exists
+
+- name: install rdbms driver from local source
+  copy:
+    src: "{{ appian_rdbms_drivers[appian_db_engine] }}"
+    dest: "{{ appian_repo_home }}/tomcat/apache-tomcat/lib/{{ appian_rdbms_drivers[appian_db_engine] }}"
+    mode: 0644
+  when: not appian_rdbms_drivers[appian_db_engine].startswith('http') and not rdbms_driver_exists.stat.exists
+  become: yes
+  become_user: "{{ appian_user }}"
+
+- name: install rdbms driver from remote
+  get_url:
+    url: "{{ appian_rdbms_drivers[appian_db_engine] }}"
+    dest: "{{ appian_repo_home }}/tomcat/apache-tomcat/lib/{{ appian_rdbms_drivers[appian_db_engine] | basename }}"
+    mode: 0644
+  when: appian_rdbms_drivers[appian_db_engine].startswith('http') and not rdbms_driver_exists.stat.exists
+  become: yes
+  become_user: "{{ appian_user }}"
+
+- name: encode the rdbms password
+  expect:
+    command: "{{ appian_home }}/_admin/_scripts/configure/configure.sh"
+    responses:
+      \>:
+        - "6"
+        - "1"
+        - "{{ appian_db_password }}"
+        - "Q"
+  register: encoded_appian_db_password
+  become: yes
+  become_user: "{{ appian_user }}"
+  become_flags: "--login"
+
+- name: write oracle tomcatResource.xml.env to the configuration repository
+  template:
+    src: templates/conf/tomcatResources.xml.oracle.j2
+    dest: "{{ appian_repo_home }}/conf/tomcatResources.xml.{{ appian_env_name }}"
+    owner: "{{ appian_user }}"
+    mode: 0644
+  become: yes
+  become_user: "{{ appian_user }}"
+  when: appian_db_engine is search("oracle")
+
+- name: write mysql tomcatResource.xml.env to the configuration repository
+  template:
+    src: templates/conf/tomcatResources.xml.mysql.j2
+    dest: "{{ appian_repo_home }}/conf/tomcatResources.xml.{{ appian_env_name }}"
+    owner: "{{ appian_user }}"
+    mode: 0644
+  become: yes
+  become_user: "{{ appian_user }}"
+  when: appian_db_engine is search("mysql")
+
+- name: create tomcat conf dir
+  file:
+    path: "{{ appian_repo_home }}/tomcat/apache-tomcat/conf"
+    state: directory
+    owner: "{{ appian_user }}"
+    group: root
+    mode: 0755
+  become: yes
+
+- name: update tomcat server.xml with jvmRoute
+  template:
+    src: templates/conf/server.xml.j2
+    dest: "{{ appian_repo_home }}/tomcat/apache-tomcat/conf/server.xml.{{ appian_env_name }}"
+    owner: "{{ appian_user }}"
+    mode: 0644
+  become: yes
+
+- name: set engines as fact so other hosts can discover engine list for this host
+  set_fact:
+    appian_engines: "{{ appian_engines }}"
+
+- name: write topology.xml
+  template:
+    src: templates/conf/appian-topology.xml.j2
+    dest: "{{  appian_repo_home }}/conf/appian-topology.xml.{{ appian_env_name }}"
+    owner: "{{ appian_user }}"
+    group: root
+    mode: 0644
+  become: yes
+  become_user: "{{ appian_user }}"
+
+- name: fetch appian.sec.env
+  fetch:
+    src: "{{ appian_repo_home }}/conf/appian.sec.{{ appian_env_name }}"
+    dest: .ansible_tmp/
+    flat: yes
+  become: yes
+  when: inventory_hostname in groups.appian_leader
+
+- name: fetch data-server-sec.properties.env
+  fetch:
+    src: "{{ appian_repo_home }}/conf/data-server-sec.properties.{{ appian_env_name }}"
+    dest: .ansible_tmp/
+    flat: yes
+  become: yes
+  when: inventory_hostname in groups.appian_leader
+
+- name: copy appian.sec.env to host
+  copy:
+    src: .ansible_tmp/appian.sec.{{ appian_env_name }}
+    dest: "{{ appian_repo_home }}/conf/appian.sec.{{ appian_env_name }}"
+    owner: "{{ appian_user }}"
+    mode: 0644
+  become: yes
+
+- name: copy data-server-sec.properties.env to host
+  copy:
+    src: .ansible_tmp/data-server-sec.properties.{{ appian_env_name }}
+    dest: "{{ appian_repo_home }}/conf/data-server-sec.properties.{{ appian_env_name }}"
+    owner: "{{ appian_user }}"
+    mode: 0644
+  become: yes
+
+- name: deploy configuration to appian
+  expect:
+    command: "{{ appian_home }}/_admin/_scripts/configure/configure.sh"
+    responses:
+      \>:
+        - "5"
+        - "1"
+        - "1"
+        - "Q"
+  become: yes
+  become_user: "{{ appian_user }}"
+  become_flags: "--login"
+
+- name: write passwords.properties for the appian initial admin user
+  template:
+    src: templates/conf/passwords.properties.j2
+    dest: "{{ appian_home }}/conf/passwords.properties"
+    owner: "{{ appian_user }}"
+    mode: 0644
+  become: yes
+  become_user: "{{ appian_user }}"

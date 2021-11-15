@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: appian
+  author: mdial89f
+  namespace: cmsgov
+  description: Helps with Appian installation; single-host and high-availability/distriuted archs are supported.
+  license: "CC0 1.0 Universal"
+  min_ansible_version: 2.9
+  platforms:
+    - name: EL
+      versions:
+        - 7
+  galaxy_tags: []
+dependencies: []

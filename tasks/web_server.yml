@@ -1,0 +1,118 @@
+---
+- name: apache
+  import_role:
+    name: geerlingguy.apache
+  vars:
+    apache_create_vhosts: false
+  become: yes
+
+- name: install packages to make mod_jk.so
+  yum:
+    name: "{{ packages }}"
+  vars:
+    packages:
+      - gcc
+      - libtool
+  become: yes
+
+- name: check for mod_jk.so
+  stat:
+    path: "{{ apache_server_root }}/modules/mod_jk.so"
+  register: mod_jk_so_check
+  become: yes
+
+- name: clean up tomcat connector directory
+  file:
+    path: "/tmp/tomcat-connectors"
+    state: absent
+  become: yes
+  when: not mod_jk_so_check.stat.exists
+
+- name: create the tomcat driver directory
+  file:
+    path: "/tmp/tomcat-connectors"
+    state: directory
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  when: not mod_jk_so_check.stat.exists
+
+- name: Unarchive mod_jk source
+  unarchive:
+    src: https://archive.apache.org/dist/tomcat/tomcat-connectors/jk/tomcat-connectors-1.2.42-src.tar.gz
+    dest: /tmp/tomcat-connectors
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+  become: yes
+  when: not mod_jk_so_check.stat.exists
+
+- name: make mod_jk.so
+  command: "./configure -with-apxs=/usr/bin/apxs"
+  args:
+    chdir: /tmp/tomcat-connectors/native
+  become: yes
+  when: not mod_jk_so_check.stat.exists
+
+- name: configure with axps
+  command: "make"
+  args:
+    chdir: /tmp/tomcat-connectors/native
+  become: yes
+  when: not mod_jk_so_check.stat.exists
+
+- name: copy mode_jk.so to modules directory
+  copy:
+    src: /tmp/tomcat-connectors/native/apache-2.0/mod_jk.so
+    dest: "{{ apache_server_root }}/modules/mod_jk.so"
+    remote_src: yes
+    mode: 0755
+  when: not mod_jk_so_check.stat.exists
+  become: yes
+
+- name: enable mod_jk
+  template:
+    src: templates/httpd/mod_jk.conf.j2
+    dest: "{{ apache_server_root }}/conf.modules.d/mod_jk.conf"
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  notify: restart apache
+
+- name: add workers.properties
+  template:
+    src: templates/httpd/workers.properties.j2
+    dest: "{{ apache_conf_path }}/workers.properties"
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  notify: restart apache
+
+- name: Add apache vhosts configuration.
+  template:
+    src: templates/httpd/vhosts.conf.j2
+    dest: "{{ apache_conf_path }}/vhosts.conf"
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  notify: restart apache
+
+- name: strip jsessionid from urls
+  template:
+    src: templates/httpd/strip_jsessionid.conf.j2
+    dest: "{{ apache_conf_path }}/strip_jsessionid.conf"
+    owner: root
+    group: root
+    mode: 0644
+  become: yes
+  notify: restart apache
+
+- name: remove default welcome page
+  file:
+    path: "{{ apache_conf_path }}/welcome.conf"
+    state: absent
+  become: yes
+  notify: restart apache

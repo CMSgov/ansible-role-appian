@@ -1,0 +1,14 @@
+LoadModule headers_module "{{ apache_server_root }}/modules/mod_headers.so"
+Loadmodule expires_module "{{ apache_server_root }}/modules/mod_expires.so"
+
+LoadModule jk_module "{{ apache_server_root }}/modules/mod_jk.so"
+
+JkWorkersFile {{ apache_conf_path }}/workers.properties
+JkLogFile /etc/httpd/logs/mod_jk.log
+
+JkLogLevel info
+
+JkLogStampFormat "[%a %b %d %H:%M:%S %Y]"
+JkOptions +ForwardKeySize +ForwardURICompat -ForwardDirectories
+JkRequestLogFormat "%w %V %T"
+JkMountCopy All

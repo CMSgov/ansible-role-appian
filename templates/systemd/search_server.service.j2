@@ -1,0 +1,16 @@
+[Unit]
+Description=Appian Search Server
+Requires=network.target
+After=network.target
+
+[Service]
+Type=forking
+User={{ appian_user }}
+EnvironmentFile=-/etc/sysconfig/appian
+ExecStart={{ appian_home }}/search-server/bin/start.sh
+ExecStop={{ appian_home }}/search-server/bin/stop.sh
+TimeoutStartSec=300
+TimeoutStopSec=300
+
+[Install]
+WantedBy=multi-user.target

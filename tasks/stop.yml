@@ -1,0 +1,20 @@
+---
+- name: stop app_server
+  service: name=app_server state=stopped enabled=no
+  become: yes
+  when: inventory_hostname in groups.appian_app_server_instances
+
+- name: stop search_server
+  service: name=search_server state=stopped enabled=no
+  become: yes
+  when: inventory_hostname in groups.appian_search_server_instances
+
+- name: stop data_server
+  service: name=data_server state=stopped enabled=no
+  become: yes
+  when: inventory_hostname in groups.appian_data_server_instances
+
+- name: stop engines
+  service: name=engines state=stopped enabled=no
+  become: yes
+  when: inventory_hostname in groups.appian_engines_instances or inventory_hostname in groups.appian_internal_messaging_instances

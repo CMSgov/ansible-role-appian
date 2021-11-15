@@ -1,0 +1,44 @@
+---
+- include_tasks: configure_services.yml
+  when: >
+    inventory_hostname in groups.appian_engines_instances or
+    inventory_hostname in groups.appian_internal_messaging_instances or
+    inventory_hostname in groups.appian_data_server_instances or
+    inventory_hostname in groups.appian_search_server_instances or
+    inventory_hostname in groups.appian_app_server_instances
+
+- include_tasks: stop.yml
+  when: >
+    inventory_hostname in groups.appian_engines_instances or
+    inventory_hostname in groups.appian_internal_messaging_instances or
+    inventory_hostname in groups.appian_data_server_instances or
+    inventory_hostname in groups.appian_search_server_instances or
+    inventory_hostname in groups.appian_app_server_instances
+
+- include_tasks: install.yml
+  when: >
+    inventory_hostname in groups.appian_engines_instances or
+    inventory_hostname in groups.appian_internal_messaging_instances or
+    inventory_hostname in groups.appian_data_server_instances or
+    inventory_hostname in groups.appian_search_server_instances or
+    inventory_hostname in groups.appian_app_server_instances
+
+- include_tasks: install_plugins.yml
+  when: inventory_hostname in groups.appian_leader
+
+- include_tasks: start.yml
+  when: >
+    inventory_hostname in groups.appian_engines_instances or
+    inventory_hostname in groups.appian_internal_messaging_instances or
+    inventory_hostname in groups.appian_data_server_instances or
+    inventory_hostname in groups.appian_search_server_instances or
+    inventory_hostname in groups.appian_app_server_instances
+
+- include_tasks: web_server.yml
+  when: inventory_hostname in groups.appian_web_server_instances
+
+- include_tasks: sync_down_web_war.yml
+  when: inventory_hostname in groups.appian_leader
+
+- include_tasks: sync_up_web_war.yml
+  when: inventory_hostname in groups.appian_web_server_instances

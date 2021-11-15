@@ -1,0 +1,140 @@
+---
+# defaults file for ansible-role-appian
+appian_user: appian
+appian_user_home: /home/appian
+appian_user_nofile_limit: 100000
+appian_host_connection_variable: ansible_hostname
+appian_installation_dir: /opt/appian
+appian_home: "{{  appian_installation_dir }}/appian"
+appian_backup_home: "{{  appian_installation_dir }}/backup"
+appian_repo_home: "{{  appian_installation_dir }}/repo"
+appian_java_home: "{{ appian_home }}/java"
+appian_bin_source: setupLinux64_appian-20.1.47.0.bin
+appian_env_name: dev
+appian_server_scheme: http
+appian_smtp_host: aspmx.l.google.com
+appian_max_exec_engine_load_metric: 120
+appian_app_server_min_heap_size: 2048
+appian_app_server_max_heap_size: 4096
+appian_rdbms_drivers:
+  mysql: https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.48/mysql-connector-java-5.1.48.jar
+  oracle: ojdbc7.jar
+appian_system_data_store_jndi: jdbc/AppianDS
+appian_shared_folder_location: /opt/appian_nfs
+appian_shared_folders:
+  - "_admin/accdocs1"
+  - "_admin/accdocs2"
+  - "_admin/accdocs3"
+  - "server/archived-process"
+  - "server/msg"
+  - "_admin/mini"
+  - "_admin/models"
+  - "_admin/plugins"
+  - "_admin/process_notes"
+  - "_admin/shared"
+  - "server/channels/gw1"
+  - "server/collaboration/gw1"
+  - "server/forums/gw1"
+  - "server/notifications/gw1"
+  - "server/personalization/gw1"
+  - "server/portal/gw1"
+  - "server/process/analytics/0000/gw1"
+  - "server/process/analytics/0001/gw1"
+  - "server/process/analytics/0002/gw1"
+  - "server/process/analytics/0003/gw1"
+  - "server/process/analytics/0004/gw1"
+  - "server/process/analytics/0005/gw1"
+  - "server/process/analytics/0006/gw1"
+  - "server/process/analytics/0007/gw1"
+  - "server/process/analytics/0008/gw1"
+  - "server/process/analytics/0009/gw1"
+  - "server/process/analytics/0010/gw1"
+  - "server/process/analytics/0011/gw1"
+  - "server/process/analytics/0012/gw1"
+  - "server/process/analytics/0013/gw1"
+  - "server/process/analytics/0014/gw1"
+  - "server/process/analytics/0015/gw1"
+  - "server/process/analytics/0016/gw1"
+  - "server/process/analytics/0017/gw1"
+  - "server/process/analytics/0018/gw1"
+  - "server/process/analytics/0019/gw1"
+  - "server/process/analytics/0020/gw1"
+  - "server/process/analytics/0021/gw1"
+  - "server/process/analytics/0022/gw1"
+  - "server/process/analytics/0023/gw1"
+  - "server/process/analytics/0024/gw1"
+  - "server/process/analytics/0025/gw1"
+  - "server/process/analytics/0026/gw1"
+  - "server/process/analytics/0027/gw1"
+  - "server/process/analytics/0028/gw1"
+  - "server/process/analytics/0029/gw1"
+  - "server/process/analytics/0030/gw1"
+  - "server/process/analytics/0031/gw1"
+  - "server/process/design/gw1"
+  - "server/process/exec/00/gw1"
+  - "server/process/exec/01/gw1"
+  - "server/process/exec/02/gw1"
+  - "server/process/exec/03/gw1"
+  - "server/process/exec/04/gw1"
+  - "server/process/exec/05/gw1"
+  - "server/process/exec/06/gw1"
+  - "server/process/exec/07/gw1"
+  - "server/process/exec/08/gw1"
+  - "server/process/exec/09/gw1"
+  - "server/process/exec/10/gw1"
+  - "server/process/exec/11/gw1"
+  - "server/process/exec/12/gw1"
+  - "server/process/exec/13/gw1"
+  - "server/process/exec/14/gw1"
+  - "server/process/exec/15/gw1"
+  - "server/process/exec/16/gw1"
+  - "server/process/exec/17/gw1"
+  - "server/process/exec/18/gw1"
+  - "server/process/exec/19/gw1"
+  - "server/process/exec/20/gw1"
+  - "server/process/exec/21/gw1"
+  - "server/process/exec/22/gw1"
+  - "server/process/exec/23/gw1"
+  - "server/process/exec/24/gw1"
+  - "server/process/exec/25/gw1"
+  - "server/process/exec/26/gw1"
+  - "server/process/exec/27/gw1"
+  - "server/process/exec/28/gw1"
+  - "server/process/exec/29/gw1"
+  - "server/process/exec/30/gw1"
+  - "server/process/exec/31/gw1"
+appian_efs_id: ""
+appian_k3_license: k3.lic
+appian_k4_license: k4.lic
+appian_sync_static_files_to_apache: true
+appian_engines:
+  - forums
+  - notify
+  - notify-email
+  - channels
+  - content
+  - collaboration-statistics
+  - personalization
+  - portal
+  - process-design
+  - process-analytics0
+  - process-analytics1
+  - process-analytics2
+  - process-execution0
+  - process-execution1
+  - process-execution2
+appian_db_engine: '{{ hostvars[groups.appiands[0]]["engine"] }}'
+appian_db_address: '{{ hostvars[groups.appiands[0]]["endpoint"]["address"] }}'
+appian_db_port: '{{ hostvars[groups.appiands[0]]["endpoint"]["port"] }}'
+appian_db_name: '{{ hostvars[groups.appiands[0]]["db_name"] }}'
+appian_db_username: '{{ hostvars[groups.appiands[0]]["master_username"] }}'
+appian_db_password: "password"
+appian_server_url: "localhost"
+appian_system_manager_password: "password"
+appian_admin_username: "admin"
+appian_admin_first_name: "John"
+appian_admin_last_name: "Smith"
+appian_admin_email: "admin@example.com"
+appian_admin_temporary_password: "badPasswordsOnly"
+appian_local_plugins_list: {}
+appian_remote_plugins_list: {}

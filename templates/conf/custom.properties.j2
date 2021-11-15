@@ -1,0 +1,15 @@
+
+conf.suite.SCHEME={{ appian_server_scheme }}
+conf.suite.SERVER_AND_PORT={{ appian_server_url }}
+{% if static_url is defined %}
+conf.suite.STATIC_SERVER_AND_PORT={{ static_url }}
+{% endif %}
+{% if dynamic_url is defined %}
+conf.suite.DYNAMIC_SERVER_AND_PORT={{ dynamic_url }}
+{% endif %}
+conf.appserver.minHeapSize={{ appian_app_server_min_heap_size }}m
+conf.appserver.maxHeapSize={{ appian_app_server_max_heap_size  }}m
+conf.mailhandler.mail.smtp.host={{ appian_smtp_host }}
+conf.data.APPIAN_DATA_SOURCE={{ appian_system_data_store_jndi }}
+conf.node.webservice.max.redirects=100
+server.conf.processcommon.MAX_EXEC_ENGINE_LOAD_METRIC={{ appian_max_exec_engine_load_metric }}

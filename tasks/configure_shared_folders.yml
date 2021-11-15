@@ -1,0 +1,83 @@
+---
+- name: create directory for shared_folder
+  file:
+    path: "{{ appian_shared_folder_location }}"
+    state: directory
+    mode: 0755
+  become: yes
+
+- name: install amazon-efs-utils
+  yum:
+    name: amazon-efs-utils
+    state: present
+  become: yes
+  when: appian_efs_id != ""
+
+- name: mount efs
+  mount:
+    path: "{{ appian_shared_folder_location }}"
+    src: "{{ appian_efs_id }}:/"
+    fstype: efs
+    opts: tls
+    state: mounted
+  become: yes
+  when: appian_efs_id != ""
+
+- name: correct ownership of shared folder
+  file:
+    path: "{{ appian_shared_folder_location }}"
+    state: directory
+    owner: "{{ appian_user }}"
+    mode: 0755
+  become: yes
+
+- name: create subdirectories in shared folder
+  file:
+    path: "{{ appian_shared_folder_location }}/{{ item }}"
+    state: directory
+    owner: "{{ appian_user }}"
+    mode: 0755
+  become: yes
+  with_items: "{{ appian_shared_folders }}"
+  when: inventory_hostname in groups.appian_leader
+
+- name: create shared log subdirectories
+  file:
+    path: "{{ appian_shared_folder_location }}/shared-logs/{{ item }}/"
+    state: directory
+    owner: "{{ appian_user }}"
+    mode: 0755
+  become: yes
+  with_items: "{{ groups['appian_instances'] }}"
+  when: inventory_hostname in groups.appian_leader
+
+- name: remove empty appian directories to replace with shared folders
+  file:
+    path: "{{ appian_home }}/{{ item }}"
+    state: absent
+    force: yes
+  become: yes
+  with_items: "{{ appian_shared_folders }}"
+  when: not appian_home_check.stat.exists
+
+- name: create shared folder parent directories
+  file:
+    path: '{{ appian_home + "/" + item | dirname }}'
+    state: directory
+    recurse: yes
+    owner: "{{ appian_user }}"
+    mode: 0755
+  become: yes
+  with_items: "{{ appian_shared_folders }}"
+  when: not appian_home_check.stat.exists
+
+- name: create shared folder links
+  file:
+    src: "{{ appian_shared_folder_location }}/{{ item }}"
+    path: "{{ appian_home }}/{{ item }}"
+    state: link
+    owner: "{{ appian_user }}"
+    mode: 0755
+  become: yes
+  with_items: "{{ appian_shared_folders }}"
+  when: not appian_home_check.stat.exists

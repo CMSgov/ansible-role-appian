@@ -1,0 +1,17 @@
+[Unit]
+Description=Appian Tomcat Application Server
+Requires=network.target
+After=network.target
+
+[Service]
+Type=forking
+User={{ appian_user }}
+EnvironmentFile=-/etc/sysconfig/appian
+ExecStart={{ appian_home }}/tomcat/apache-tomcat/bin/start-appserver.sh
+ExecStartPost={{ appian_home }}/tomcat/apache-tomcat/bin/wait-for-tomcat.sh
+ExecStop={{ appian_home }}/tomcat/apache-tomcat/bin/stop-appserver.sh
+TimeoutStartSec=1200
+TimeoutStopSec=300
+
+[Install]
+WantedBy=multi-user.target

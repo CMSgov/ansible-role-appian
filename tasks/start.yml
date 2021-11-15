@@ -1,0 +1,21 @@
+---
+- name: start engines
+  service: name=engines state=started enabled=no
+  become: yes
+  when: inventory_hostname in groups.appian_engines_instances or inventory_hostname in groups.appian_internal_messaging_instances
+
+- name: start data_server
+  service: name=data_server state=started enabled=no
+  become: yes
+  when: inventory_hostname in groups.appian_data_server_instances
+
+- name: start search_server
+  service: name=search_server state=started enabled=no
+  become: yes
+  when: inventory_hostname in groups.appian_search_server_instances
+
+- name: start app_server
+  service: name=app_server state=started enabled=no
+  become: yes
+  throttle: 1 # tomcat on each app_server must be started one by one.
+  when: inventory_hostname in groups.appian_app_server_instances

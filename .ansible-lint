@@ -1,0 +1,6 @@
+skip_list:
+  - '602' # [602] Don't compare to empty string... see: https://github.com/ansible/ansible-lint/issues/457
+exclude_paths:
+  - ./molecule/default/.ansible_tmp/
+  - ./molecule/ha/.ansible_tmp/
+  - ./molecule/ha-aws/.ansible_tmp/

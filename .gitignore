@@ -1,0 +1,7 @@
+.ansible_tmp
+
+*.lic
+*.bin
+*.jar
+
+files/plugins

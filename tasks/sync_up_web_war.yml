@@ -1,0 +1,19 @@
+---
+- name: sync web.war to apache
+  synchronize:
+    mode: push
+    src: .ansible_tmp/web.war/
+    dest: /var/www/suite/
+  become: yes
+  when: appian_sync_static_files_to_apache
+
+- name: create /var/www/suite with correct ownership
+  file:
+    path: /var/www/suite
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+    recurse: true
+  become: yes
+  when: appian_sync_static_files_to_apache

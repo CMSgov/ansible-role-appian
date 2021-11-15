@@ -1,0 +1,16 @@
+---
+- name: Verify
+  hosts: localhost
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: assert home page is returning 200
+      uri:
+        url: "{{ appian_server_scheme }}://{{ appian_server_url }}/suite/"
+        return_content: yes
+        status_code: 200
+      register: result
+
+    - name: assert homepage has 'Appian Corporation'
+      assert:
+        that: result.content is search('Appian Corporation') # simple smoke test

@@ -1,0 +1,152 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+platforms:
+  - name: appian1-ha
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos7}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - molecule_efs:/opt/appian_nfs
+      - molecule_web_war:/web_war
+    keep_volumes: False
+    privileged: true
+    pre_build_image: true
+    networks:
+      - name: molecule
+  - name: appian2-ha
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos7}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - molecule_efs:/opt/appian_nfs
+    keep_volumes: False
+    privileged: true
+    pre_build_image: true
+    networks:
+      - name: molecule
+  - name: appian3-ha
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos7}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - molecule_efs:/opt/appian_nfs
+    keep_volumes: False
+    privileged: true
+    pre_build_image: true
+    networks:
+      - name: molecule
+  - name: appian4-ha
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos7}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - molecule_efs:/opt/appian_nfs
+    keep_volumes: False
+    privileged: true
+    pre_build_image: true
+    networks:
+      - name: molecule
+  - name: appian5-ha
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-centos7}-ansible:latest"
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - molecule_web_war:/web_war
+    keep_volumes: False
+    privileged: true
+    pre_build_image: true
+    published_ports:
+      - "80:80"
+    networks:
+      - name: molecule
+  - name: mysql
+    image: "mysql:5.7"
+    privileged: true
+    pre_build_image: true
+    override_command: false
+    networks:
+      - name: molecule
+    env:
+      MYSQL_ROOT_PASSWORD: dbPW123!bang
+      MYSQL_DATABASE: APPIAN
+provisioner:
+  name: ansible
+  playbooks:
+    converge: ${MOLECULE_PLAYBOOK:-converge.yml}
+  inventory:
+    hosts:
+      all:
+        hosts:
+          appian1-ha:
+          appian2-ha:
+          appian3-ha:
+          appian4-ha:
+          appian5-ha:
+          mysql:
+            engine: mysql
+            master_username: root
+            endpoint:
+              address: mysql
+              port: 3306
+            db_name: APPIAN
+      appian_instances:
+        hosts:
+          appian1-ha:
+          appian2-ha:
+          appian3-ha:
+          appian4-ha:
+          appian5-ha:
+      appian_engines_instances:
+        hosts:
+          appian1-ha:
+          appian2-ha:
+          appian3-ha:
+      appian_internal_messaging_instances:
+        hosts:
+          appian1-ha:
+          appian2-ha:
+          appian4-ha:
+      appian_data_server_instances:
+        hosts:
+          appian1-ha:
+          appian2-ha:
+          appian3-ha:
+      appian_search_server_instances:
+        hosts:
+          appian1-ha:
+          appian2-ha:
+          appian3-ha:
+      appian_app_server_instances:
+        hosts:
+          appian1-ha:
+      appian_web_server_instances:
+        hosts:
+          appian5-ha:
+      appian_leader:
+        hosts:
+          appian1-ha:
+      appiands:
+        hosts:
+          mysql:
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - lint
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    - verify
+    - cleanup
+    - destroy

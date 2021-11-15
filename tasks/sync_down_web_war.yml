@@ -1,0 +1,8 @@
+---
+- name: sync web.war to runner
+  synchronize:
+    mode: pull
+    src: "{{ appian_home }}/deployment/web.war/"
+    dest: .ansible_tmp/web.war/
+  become: yes
+  when: appian_sync_static_files_to_apache

@@ -1,0 +1,48 @@
+---
+- name: write environmentfile for appian services
+  template:
+    src: templates/sysconfig/appian.j2
+    dest: "/etc/sysconfig/appian"
+    owner: root
+    mode: 0644
+  become: yes
+
+- name: configure service engines
+  template:
+    src: templates/systemd/engines.service.j2
+    dest: "/etc/systemd/system/engines.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+  become: yes
+  when: inventory_hostname in groups.appian_engines_instances or inventory_hostname in groups.appian_internal_messaging_instances
+
+- name: configure service data_server
+  template:
+    src: templates/systemd/data_server.service.j2
+    dest: "/etc/systemd/system/data_server.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+  become: yes
+  when: inventory_hostname in groups.appian_data_server_instances
+
+- name: configure service search_server
+  template:
+    src: templates/systemd/search_server.service.j2
+    dest: "/etc/systemd/system/search_server.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+  become: yes
+  when: inventory_hostname in groups.appian_search_server_instances
+
+- name: configure service app_server
+  template:
+    src: templates/systemd/app_server.service.j2
+    dest: "/etc/systemd/system/app_server.service"
+    owner: "root"
+    group: "root"
+    mode: 0644
+  become: yes
+  when: inventory_hostname in groups.appian_app_server_instances

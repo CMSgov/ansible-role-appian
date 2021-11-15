@@ -1,0 +1,11 @@
+---
+appian_server_url: localhost
+appian_server_scheme: http
+appian_system_manager_password: sysmanPW123
+appian_db_password: dbPW123!bang
+appian_admin_username: "admin"
+appian_admin_first_name: "Mike"
+appian_admin_last_name: "Dial"
+appian_admin_email: "admin@example.com"
+appian_admin_temporary_password: "badPasswordsOnly"
+appian_sync_static_files_to_apache: false

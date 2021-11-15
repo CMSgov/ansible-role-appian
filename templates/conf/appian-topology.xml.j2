@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<topology port="5000">
+{% for instance in groups.appian_engines_instances %}
+  <server host="{{ hostvars[instance][appian_host_connection_variable] }}">
+{% for engine in hostvars[instance]['appian_engines'] %}
+    <engine name="{{ engine }}"/>
+{% endfor %}
+  </server>
+{% endfor %}
+  <search-cluster>
+{% for instance in groups.appian_search_server_instances %}
+    <search-server host="{{ hostvars[instance][appian_host_connection_variable] }}" port="9301"/>
+{% endfor %}
+  </search-cluster>
+  <kafkaCluster>
+{% for instance in groups.appian_internal_messaging_instances %}
+    <broker host="{{ hostvars[instance][appian_host_connection_variable] }}" port="9092"/>
+{% endfor %}
+  </kafkaCluster>
+  <zookeeperCluster>
+{% for instance in groups.appian_internal_messaging_instances %}
+    <zookeeper host="{{ hostvars[instance][appian_host_connection_variable] }}" port="2181"/>
+{% endfor %}
+  </zookeeperCluster>
+  <data-server-cluster>
+{% for instance in groups.appian_data_server_instances %}
+    <data-server host="{{ hostvars[instance][appian_host_connection_variable] }}" port="5400" rts-count="1"/>
+{% endfor %}
+  </data-server-cluster>
+</topology>

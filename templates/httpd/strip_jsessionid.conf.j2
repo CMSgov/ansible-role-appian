@@ -1,0 +1,13 @@
+JkStripSession On
+
+<Directory "/var/www/suite">
+  AllowOverride FileInfo
+  Require all granted
+</Directory>
+
+<Directory "/var/www/suite/WEB-INF">
+  Require all denied
+</Directory>
+<Directory "/var/www/suite/dataload">
+  Require all denied
+</Directory>

@@ -1,0 +1,14 @@
+worker.list=LoadBalancer
+
+{% for instance in groups.appian_app_server_instances %}
+worker.{{ hostvars[instance]['ansible_hostname'] }}.host={{ hostvars[instance][appian_host_connection_variable] }}
+worker.{{ hostvars[instance]['ansible_hostname'] }}.port=8009
+worker.{{ hostvars[instance]['ansible_hostname'] }}.type=ajp13
+worker.{{ hostvars[instance]['ansible_hostname'] }}.socket_connect_timeout=5000
+{% endfor %}
+
+worker.LoadBalancer.type=lb
+
+worker.LoadBalancer.balance_workers={% for instance in groups.appian_app_server_instances %}{% if loop.index != 1 %},{% endif %}{{ hostvars[instance]['ansible_hostname'] }}{% endfor %}
+
+worker.LoadBalancer.sticky_session=1
